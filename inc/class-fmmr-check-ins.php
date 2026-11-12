@@ -47,8 +47,13 @@ class MRCheckIns{
     
     public function map_checkins(){
         if($this->check_ins){
-            $this->check_ins=array_map(function($n){
-               // $filemaker_id = get_post_meta($n['EventId'],'filemaker_id',true);
+            $orders = [];
+            $this->check_ins=array_map(function($n)use(&$orders){
+                $order_id = $n['OrderId'];
+                if(!array_key_exists($order_id,$orders)){
+                    $orders[$order_id] = $order_id?wc_get_order($order_id):false;
+                }
+                $order = $orders[$order_id];
                 return [
                     'name'=>$n['AttendeeName'],
                     'ticket'=>$n['TicketId'],
@@ -57,6 +62,8 @@ class MRCheckIns{
                     'date'=>$n['EventDate'],
                     'filemaker_id'=>$n['FmId'],
                     'order_id'=>$n['OrderId'],
+                    'ticket_type'=>$order?MROrders::get_ticket_type($order):null,
+                    'payment_method'=>$order?MROrders::get_payment_method($order):null,
                     'id'=>$n['AttendeeId'],
                     'updated'=>$n['updated']
                 ];

@@ -272,10 +272,10 @@ class MROrders{
         $return = [];
         foreach($items as $item){
             if( $item->is_type( 'coupon' ) ) {
-                $coupon_id = $item->get_id();
-                $coupon = new WC_Coupon($coupon_id);
+                $coupon = new WC_Coupon($item->get_code());
+               
                 $return[]= [
-                    'coupon_id'=>$coupon_id,
+                    'coupon_id'=>$coupon->get_id(),
                     'coupon_name'=>$item->get_code(),
                     'coupon_type'=>$coupon->get_discount_type(),
                     'quantity'=>$item->get_quantity(),

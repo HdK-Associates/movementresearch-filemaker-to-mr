@@ -78,7 +78,7 @@ class MROrders{
                     $refunded_items[] = $this->process_order_items($refund->get_items(),true,$order);
                 }
             }
-            $response[] = [
+            $row = [
                 'order_id'=>$order_id,
                 'order_number'=>$order->get_order_number(),
                 'order_date'=>$order->get_date_created()->date('Y-m-d H:i:s'),
@@ -99,9 +99,10 @@ class MROrders{
                 'refund'=>$order->get_total_refunded(),
                 'transferred'=>get_post_meta($order_id,'transferred_from',true),
             ];
-            if($response['refund']){
-                $response['amount_paid'] = floatval($response['amount_paid']) - floatval($response['refund']);
+            if($row['refund']){
+                $row['amount_paid'] = floatval($row['amount_paid']) - floatval($row['refund']);
             }
+            $response[] = $row;
         }
         return $response;
     }

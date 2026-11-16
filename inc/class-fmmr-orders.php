@@ -78,7 +78,7 @@ class MROrders{
                     $refunded_items[] = $this->process_order_items($refund->get_items(),true,$order);
                 }
             }
-            $response[] = [
+            $row = [
                 'order_id'=>$order_id,
                 'order_number'=>$order->get_order_number(),
                 'order_date'=>$order->get_date_created()->date('Y-m-d H:i:s'),
@@ -89,8 +89,9 @@ class MROrders{
                 'attendee_phone'=>$order->get_billing_phone(),
                 'attendee_address'=>['billing'=>$order->get_formatted_billing_address(),'shipping'=>$order->get_formatted_shipping_address()],
                 'amount_paid'=>$order->get_total(),
-                'payment_method'=>$order->get_payment_method_title()?:$order->get_payment_method(),
-                'order_items'=>$this->process_order_items($items),
+                'payment_method'=>self::get_payment_method($order),
+                'ticket_type'=>self::get_ticket_type($order),
+                'order_items'=>$this->process_order_items($items,false,$order),
                 'refunded_items'=>$refunded_items, 
                 'discount'=>$this->process_order_discount($items),
                 'coupons'=>$order->get_used_coupons(),
@@ -98,11 +99,20 @@ class MROrders{
                 'refund'=>$order->get_total_refunded(),
                 'transferred'=>get_post_meta($order_id,'transferred_from',true),
             ];
-            if($response['refund']){
-                $response['amount_paid'] = floatval($response['amount_paid']) - floatval($response['refund']);
+            if($row['refund']){
+                $row['amount_paid'] = floatval($row['amount_paid']) - floatval($row['refund']);
             }
+            $response[] = $row;
         }
         return $response;
+    }
+
+    public static function get_payment_method($order){
+        return $order->get_payment_method_title()?:$order->get_payment_method();
+    }
+
+    public static function get_ticket_type($order){
+        return $order->get_meta('ticket_type');
     }
 
     private function process_order_items($items,$refund = false,$order = false){
@@ -131,6 +141,8 @@ class MROrders{
                         'coupon_applied'=>$this->has_coupon_applied($item),
                         'paid_after_coupon'=>$item->get_total(),
                         'payment_type'=>$event->get_payment_type()['type'],
+                        'ticket_type'=>$order?self::get_ticket_type($order):null,
+                        'payment_method'=>$order?self::get_payment_method($order):null,
                     ];
                     continue;
                 }
@@ -260,10 +272,10 @@ class MROrders{
         $return = [];
         foreach($items as $item){
             if( $item->is_type( 'coupon' ) ) {
-                $coupon_id = $item->get_id();
-                $coupon = new WC_Coupon($coupon_id);
+                $coupon = new WC_Coupon($item->get_code());
+               
                 $return[]= [
-                    'coupon_id'=>$coupon_id,
+                    'coupon_id'=>$coupon->get_id(),
                     'coupon_name'=>$item->get_code(),
                     'coupon_type'=>$coupon->get_discount_type(),
                     'quantity'=>$item->get_quantity(),
